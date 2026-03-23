@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>App de Sermões</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 0; padding: 0; background-color: #f4f4f4; }
+    .container { max-width: 800px; margin: 20px auto; padding: 20px; background: white; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+    h1 { text-align: center; }
+    form { display: flex; flex-direction: column; }
+    input, textarea, button { margin: 10px 0; padding: 10px; box-sizing: border-box; font-size: 14px; }
+    input[type="date"] { height: auto; line-height: 1.5; }
+    textarea { resize: vertical; min-height: 100px; }
+    button { background: #007bff; color: white; border: none; cursor: pointer; padding: 8px 12px; }
+    button:hover { background: #0056b3; }
+    .button-group { display: flex; gap: 5px; flex-wrap: wrap; }
+    .button-group button { margin: 0; flex: 1; min-width: 80px; }
+    .hidden { display: none; }
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+    th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+    th { background-color: #f2f2f2; }
+    .sermon-row { cursor: pointer; }
+    .sermon-row:hover { background-color: #f9f9f9; }
+    .modal { display: none; position: fixed; z-index: 1; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.4); }
+    .modal-content { background-color: #fefefe; margin: 15% auto; padding: 20px; border: 1px solid #888; width: 80%; max-width: 600px; border-radius: 8px; }
+    .close { color: #aaa; float: right; font-size: 28px; font-weight: bold; cursor: pointer; }
+    .close:hover { color: black; }
+
+    /* Responsividade */
+    @media (max-width: 768px) {
+      .container { margin: 10px; padding: 15px; }
+      table { font-size: 14px; }
+      th, td { padding: 6px; }
+      .modal-content { width: 90%; margin: 20% auto; }
+    }
+
+    @media (max-width: 480px) {
+      .container { margin: 5px; padding: 10px; }
+      h1 { font-size: 24px; }
+      h2 { font-size: 20px; }
+      input, textarea, button { font-size: 16px; }
+      table { font-size: 12px; }
+      th, td { padding: 4px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div id="login">
+      <h1>Login</h1>
+      <form id="loginForm">
+        <input type="text" id="username" placeholder="Username" required>
+        <input type="password" id="password" placeholder="Password" required>
+        <button type="submit">Entrar</button>
+      </form>
+      <p id="loginError"></p>
+    </div>
+
+    <div id="dashboard" class="hidden">
+      <h1>Gerenciar Sermões</h1>
+      <button id="logout">Logout</button>
+      <h2>Adicionar Sermão</h2>
+      <form id="sermonForm">
+        <input type="text" id="titulo" placeholder="Título" required>
+        <textarea id="conteudo" placeholder="Conteúdo" required></textarea>
+        <input type="date" id="data" required>
+        <input type="text" id="local" placeholder="Local da ministração">
+        <button type="submit">Salvar</button>
+      </form>
+      <h2>Sermões</h2>
+      <table id="sermoesTable">
+        <thead>
+          <tr>
+            <th>Título</th>
+            <th>Data</th>
+            <th>Local</th>
+            <th>Ações</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Modal para visualizar conteúdo -->
+  <div id="sermonModal" class="modal">
+    <div class="modal-content">
+      <span class="close">&times;</span>
+      <h2 id="modalTitle"></h2>
+      <p><strong>Data:</strong> <span id="modalDate"></span></p>
+      <p><strong>Local:</strong> <span id="modalLocal"></span></p>
+      <div id="modalContent"></div>
+    </div>
+  </div>
+
+  <script>
+    const API_URL = 'http://localhost:3000';
+    let token = localStorage.getItem('token');
+
+    const loginDiv = document.getElementById('login');
+    const dashboardDiv = document.getElementById('dashboard');
+    const loginForm = document.getElementById('loginForm');
+    const sermonForm = document.getElementById('sermonForm');
+    const sermoesTable = document.getElementById('sermoesTable').querySelector('tbody');
+    const logoutBtn = document.getElementById('logout');
+
+    // Check if logged in
+    if (token) {
+      showDashboard();
+      loadSermoes();
+    }
+
+    // Login
+    loginForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const username = document.getElementById('username').value;
+      const password = document.getElementById('password').value;
+
+      try {
+        const res = await fetch(`${API_URL}/login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, password })
+        });
+        const data = await res.json();
+        if (res.ok) {
+          token = data.token;
+          localStorage.setItem('token', token);
+          showDashboard();
+          loadSermoes();
+        } else {
+          document.getElementById('loginError').textContent = data.error;
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    });
+
+    // Logout
+    logoutBtn.addEventListener('click', () => {
+      token = null;
+      localStorage.removeItem('token');
+      showLogin();
+    });
+
+    // Add/Update sermon
+    sermonForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const titulo = document.getElementById('titulo').value;
+      const conteudo = document.getElementById('conteudo').value;
+      const data = document.getElementById('data').value;
+      const local = document.getElementById('local').value;
+      const editId = sermonForm.dataset.editId;
+
+      const method = editId ? 'PUT' : 'POST';
+      const url = editId ? `${API_URL}/sermoes/${editId}` : `${API_URL}/sermoes`;
+
+      try {
+        const res = await fetch(url, {
+          method,
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ titulo, conteudo, data, local })
+        });
+        if (res.ok) {
+          sermonForm.reset();
+          delete sermonForm.dataset.editId;
+          const submitBtn = sermonForm.querySelector('button[type="submit"]');
+          submitBtn.textContent = 'Salvar';
+          loadSermoes();
+        } else {
+          alert('Erro ao salvar');
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    });
+
+    // Format date from YYYY-MM-DD to DD-MM-YYYY
+    function formatDate(dateStr) {
+      if (!dateStr) return '';
+      const [year, month, day] = dateStr.split('-');
+      return `${day}/${month}/${year}`;
+    }
+
+    // Load sermons
+    async function loadSermoes() {
+      try {
+        const res = await fetch(`${API_URL}/sermoes`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await res.json();
+        sermoesTable.innerHTML = '';
+        data.sermoes.forEach(sermon => {
+          const row = document.createElement('tr');
+          row.className = 'sermon-row';
+          const formattedDate = formatDate(sermon.data);
+          row.innerHTML = `
+            <td>${sermon.titulo}</td>
+            <td>${formattedDate}</td>
+            <td>${sermon.local || ''}</td>
+            <td class="button-group">
+              <button class="edit-btn">Editar</button>
+              <button class="delete-btn">Excluir</button>
+            </td>
+          `;
+          
+          // Editar button - não abre modal, só carrega form
+          const editBtn = row.querySelector('.edit-btn');
+          editBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            loadSermonForEdit(sermon.id);
+          });
+          
+          // Deletar button
+          const deleteBtn = row.querySelector('.delete-btn');
+          deleteBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            deleteSermon(sermon.id);
+          });
+          
+          // View modal ao clicar na linha
+          row.addEventListener('click', () => showSermonModal(sermon));
+          sermoesTable.appendChild(row);
+        });
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    // Load sermon for editing
+    async function loadSermonForEdit(id) {
+      try {
+        const res = await fetch(`${API_URL}/sermoes/${id}`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const sermon = await res.json();
+        if (res.ok) {
+          document.getElementById('titulo').value = sermon.titulo;
+          document.getElementById('conteudo').value = sermon.conteudo;
+          document.getElementById('data').value = sermon.data;
+          document.getElementById('local').value = sermon.local || '';
+          const submitBtn = sermonForm.querySelector('button[type="submit"]');
+          submitBtn.textContent = 'Atualizar';
+          sermonForm.dataset.editId = id;
+          sermonForm.scrollIntoView({ behavior: 'smooth' });
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    // Delete sermon
+    async function deleteSermon(id) {
+      if (confirm('Tem certeza que deseja excluir este sermão?')) {
+        try {
+          const res = await fetch(`${API_URL}/sermoes/${id}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          if (res.ok) {
+            alert('Sermão excluído com sucesso!');
+            loadSermoes();
+          }
+        } catch (err) {
+          console.error(err);
+          alert('Erro ao excluir sermão');
+        }
+      }
+    }
+
+    // Show sermon modal
+    function showSermonModal(sermon) {
+      const formattedDate = formatDate(sermon.data);
+      document.getElementById('modalTitle').textContent = sermon.titulo;
+      document.getElementById('modalDate').textContent = formattedDate;
+      document.getElementById('modalLocal').textContent = sermon.local || 'Não informado';
+      document.getElementById('modalContent').innerHTML = '<p><strong>Conteúdo:</strong></p><p>' + sermon.conteudo.replace(/\n/g, '<br>') + '</p>';
+      document.getElementById('sermonModal').style.display = 'block';
+    }
+
+    // Close modal
+    document.querySelector('.close').addEventListener('click', () => {
+      document.getElementById('sermonModal').style.display = 'none';
+    });
+
+    window.addEventListener('click', (event) => {
+      if (event.target == document.getElementById('sermonModal')) {
+        document.getElementById('sermonModal').style.display = 'none';
+      }
+    });
+
+    function showLogin() {
+      loginDiv.classList.remove('hidden');
+      dashboardDiv.classList.add('hidden');
+    }
+
+    function showDashboard() {
+      loginDiv.classList.add('hidden');
+      dashboardDiv.classList.remove('hidden');
+    }
+  </script>
+</body>
+</html>
