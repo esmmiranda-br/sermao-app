@@ -399,28 +399,28 @@
       return quotes;
     }
 
-    // Função para buscar texto bíblico (usando API externa)
+    // Função para buscar texto bíblico usando ABíbliaDigital (versão, livro, capítulo)
     async function fetchBibleText(book, chapter, verse, endVerse) {
       try {
-        // Usando API da American Bible Society (NIV em inglês)
+        // Mapeamento de livros para abreviações da ABíbliaDigital
         const bookMap = {
-          'Gênesis': 'Gen', 'Êxodo': 'Exod', 'Levítico': 'Lev', 'Números': 'Num',
-          'Deuteronômio': 'Deut', 'Josué': 'Josh', 'Juízes': 'Judg', 'Rute': 'Ruth',
-          '1 Samuel': '1Sam', '2 Samuel': '2Sam', '1 Reis': '1Kgs', '2 Reis': '2Kgs',
-          '1 Crônicas': '1Chr', '2 Crônicas': '2Chr', 'Esdras': 'Ezra', 'Neemias': 'Neh',
-          'Ester': 'Esth', 'Jó': 'Job', 'Salmos': 'Ps', 'Provérbios': 'Prov',
-          'Eclesiastes': 'Eccl', 'Cânticos': 'Song', 'Isaías': 'Isa', 'Jeremias': 'Jer',
-          'Lamentações': 'Lam', 'Ezequiel': 'Ezek', 'Daniel': 'Dan', 'Oséias': 'Hos',
-          'Joel': 'Joel', 'Amós': 'Amos', 'Obadias': 'Obad', 'Jonas': 'Jonah',
-          'Miquéias': 'Mic', 'Naum': 'Nah', 'Habacuque': 'Hab', 'Sofonias': 'Zeph',
-          'Ageu': 'Hag', 'Zacarias': 'Zech', 'Malaquias': 'Mal', 'Mateus': 'Matt',
-          'Marcos': 'Mark', 'Lucas': 'Luke', 'João': 'John', 'Atos': 'Acts',
-          'Romanos': 'Rom', '1 Coríntios': '1Cor', '2 Coríntios': '2Cor', 'Gálatas': 'Gal',
-          'Efésios': 'Eph', 'Filipenses': 'Phil', 'Colossenses': 'Col',
-          '1 Tessalonicenses': '1Thess', '2 Tessalonicenses': '2Thess', '1 Timóteo': '1Tim',
-          '2 Timóteo': '2Tim', 'Tito': 'Titus', 'Filemom': 'Phlm', 'Hebreus': 'Heb',
-          'Tiago': 'Jas', '1 Pedro': '1Pet', '2 Pedro': '2Pet', '1 João': '1John',
-          '2 João': '2John', '3 João': '3John', 'Judas': 'Jude', 'Apocalipse': 'Rev'
+          'Gênesis': 'gn', 'Êxodo': 'ex', 'Levítico': 'lv', 'Números': 'nm',
+          'Deuteronômio': 'dt', 'Josué': 'js', 'Juízes': 'jz', 'Rute': 'rt',
+          '1 Samuel': '1sm', '2 Samuel': '2sm', '1 Reis': '1rs', '2 Reis': '2rs',
+          '1 Crônicas': '1cr', '2 Crônicas': '2cr', 'Esdras': 'ed', 'Neemias': 'ne',
+          'Ester': 'et', 'Jó': 'jó', 'Salmos': 'sl', 'Provérbios': 'pv',
+          'Eclesiastes': 'ec', 'Cânticos': 'ct', 'Isaías': 'is', 'Jeremias': 'jr',
+          'Lamentações': 'lm', 'Ezequiel': 'ez', 'Daniel': 'dn', 'Oséias': 'os',
+          'Joel': 'jl', 'Amós': 'am', 'Obadias': 'ob', 'Jonas': 'jn',
+          'Miquéias': 'mq', 'Naum': 'na', 'Habacuque': 'hc', 'Sofonias': 'sf',
+          'Ageu': 'ag', 'Zacarias': 'zc', 'Malaquias': 'ml', 'Mateus': 'mt',
+          'Marcos': 'mc', 'Lucas': 'lc', 'João': 'jo', 'Atos': 'at',
+          'Romanos': 'rm', '1 Coríntios': '1co', '2 Coríntios': '2co', 'Gálatas': 'gl',
+          'Efésios': 'ef', 'Filipenses': 'fp', 'Colossenses': 'cl',
+          '1 Tessalonicenses': '1ts', '2 Tessalonicenses': '2ts', '1 Timóteo': '1tm',
+          '2 Timóteo': '2tm', 'Tito': 'tt', 'Filemom': 'fm', 'Hebreus': 'hb',
+          'Tiago': 'tg', '1 Pedro': '1pe', '2 Pedro': '2pe', '1 João': '1jo',
+          '2 João': '2jo', '3 João': '3jo', 'Judas': 'jd', 'Apocalipse': 'ap'
         };
 
         const bookAbbrev = bookMap[book];
@@ -428,19 +428,27 @@
           return 'Livro não encontrado no mapeamento.';
         }
 
-        const passage = endVerse ? `${bookAbbrev}+${chapter}:${verse}-${endVerse}` : `${bookAbbrev}+${chapter}:${verse}`;
-        const url = `https://labs.bible.org/api/?passage=${passage}&type=json`;
+        // Versão padrão: nvi (pode trocar para acf, ra, etc.)
+        const version = 'nvi';
+        const url = `https://www.abibliadigital.com.br/api/verses/${version}/${bookAbbrev}/${chapter}`;
 
         const response = await fetch(url);
         const data = await response.json();
 
-        if (!Array.isArray(data) || data.length === 0) {
+        if (!data || !data.verses || !Array.isArray(data.verses)) {
           return 'Texto não encontrado ou erro na API.';
         }
 
-        // Combinar todos os versículos em um texto único
-        const text = data.map(verse => `${verse.verse}. ${verse.text}`).join(' ');
+        // Se for um versículo específico, filtra
+        let verses = data.verses;
+        if (verse) {
+          const startVerse = parseInt(verse);
+          const end = endVerse ? parseInt(endVerse) : startVerse;
+          verses = verses.filter(v => v.number >= startVerse && v.number <= end);
+        }
 
+        // Monta o texto
+        const text = verses.map(v => `${v.number}. ${v.text}`).join(' ');
         return text || 'Texto não encontrado';
       } catch (error) {
         console.error('Erro ao buscar texto bíblico:', error);
@@ -476,7 +484,7 @@
         const endVerse = quoteElement.dataset.endVerse;
 
         // Mostrar modal de carregamento
-        document.getElementById('bibleModalTitle').textContent = `${book} ${chapter}:${verse}${endVerse ? `-${endVerse}` : ''} (NVI)`;
+        document.getElementById('bibleModalTitle').textContent = `${book} ${chapter}:${verse}${endVerse ? `-${endVerse}` : ''} (Almeida)`;
         document.getElementById('bibleContent').innerHTML = '<p>Carregando texto bíblico...</p>';
         document.getElementById('bibleModal').style.display = 'block';
 
