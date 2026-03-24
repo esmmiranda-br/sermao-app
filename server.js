@@ -5,9 +5,16 @@ const jwt = require('jsonwebtoken');
 const db = require('./database');
 require('dotenv').config();
 
+console.log('Iniciando servidor...');
+console.log('NODE_ENV:', process.env.NODE_ENV);
+console.log('PORT:', process.env.PORT);
+console.log('JWT_SECRET definido:', !!process.env.JWT_SECRET);
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 const JWT_SECRET = process.env.JWT_SECRET || 'seu_segredo_jwt_aqui';
+
+console.log('Configurações carregadas, PORT:', PORT);
 
 // Error handling para evitar que o processo morra silenciosamente
 process.on('uncaughtException', (err) => {
@@ -202,8 +209,15 @@ app.get('*', (req, res) => {
 });
 
 // Start server
+console.log('Tentando iniciar servidor na porta:', PORT);
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`Servidor rodando em http://0.0.0.0:${PORT}`);
+  console.log(`Porta ${PORT} aberta e escutando`);
 });
+
+// Keep-alive para Render
+setInterval(() => {
+  console.log('Servidor ainda ativo...');
+}, 300000); // 5 minutos
 
 module.exports = app;
