@@ -4,131 +4,78 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>App de Sermões</title>
-  <style>
-    body { font-family: Arial, sans-serif; margin: 0; padding: 0; background-color: #f4f4f4; }
-    .container { max-width: 800px; margin: 20px auto; padding: 20px; background: white; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
-    h1 { text-align: center; }
-    form { display: flex; flex-direction: column; }
-    input, textarea, button { margin: 10px 0; padding: 10px; box-sizing: border-box; font-size: 14px; }
-    input[type="date"] { height: auto; line-height: 1.5; }
-    textarea { resize: vertical; min-height: 100px; }
-    button { background: #007bff; color: white; border: none; cursor: pointer; padding: 8px 12px; }
-    button:hover { background: #0056b3; }
-    .button-group { display: flex; gap: 5px; flex-wrap: wrap; }
-    .button-group button { margin: 0; flex: 1; min-width: 80px; }
-    .hidden { display: none; }
-    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-    th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-    th { background-color: #f2f2f2; }
-    .sermon-row { cursor: pointer; }
-    .sermon-row:hover { background-color: #f9f9f9; }
-    .modal { display: none; position: fixed; z-index: 1; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.4); }
-    .modal-content { background-color: #fefefe; margin: 15% auto; padding: 20px; border: 1px solid #888; width: 80%; max-width: 600px; border-radius: 8px; }
-    .close { color: #aaa; float: right; font-size: 28px; font-weight: bold; cursor: pointer; }
-    .close:hover { color: black; }
-
-    /* Tamanhos de fonte para conteúdo */
-    .font-small { font-size: 14px; }
-    .font-medium { font-size: 16px; }
-    .font-large { font-size: 18px; }
-
-    /* Estilos para citações bíblicas */
-    .bible-quote {
-      background-color: #e8f4fd;
-      border-left: 3px solid #2196F3;
-      padding: 8px 12px;
-      margin: 8px 0;
-      border-radius: 4px;
-      cursor: pointer;
-      transition: background-color 0.2s;
-    }
-    .bible-quote:hover {
-      background-color: #d1e7dd;
-    }
-    .bible-quote strong {
-      color: #1976D2;
-    }
-
-    /* Responsividade */
-    @media (max-width: 768px) {
-      .container { margin: 10px; padding: 15px; }
-      table { font-size: 14px; }
-      th, td { padding: 6px; }
-      .modal-content { width: 90%; margin: 20% auto; }
-    }
-
-    @media (max-width: 480px) {
-      .container { margin: 5px; padding: 10px; }
-      h1 { font-size: 24px; }
-      h2 { font-size: 20px; }
-      input, textarea, button { font-size: 16px; }
-      table { font-size: 12px; }
-      th, td { padding: 4px; }
-    }
-  </style>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body>
-  <div class="container">
-    <div id="login">
-      <h1>Login</h1>
-      <form id="loginForm">
-        <input type="text" id="username" placeholder="Username" required>
-        <input type="password" id="password" placeholder="Password" required>
-        <button type="submit">Entrar</button>
-      </form>
-      <p id="loginError"></p>
-    </div>
+  <div class="min-h-screen flex items-center justify-center bg-gray-100">
+    <div class="w-full max-w-2xl mx-auto p-6 bg-white rounded-xl shadow-lg">
+      <div id="login">
+        <h1 class="text-3xl font-bold text-center mb-6 text-blue-700">Login</h1>
+        <form id="loginForm" class="flex flex-col gap-4">
+          <input type="text" id="username" placeholder="Username" required class="border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400" />
+          <input type="password" id="password" placeholder="Password" required class="border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400" />
+          <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 rounded transition">Entrar</button>
+        </form>
+        <p id="loginError" class="text-red-600 mt-2"></p>
+      </div>
 
-    <div id="dashboard" class="hidden">
-      <h1>Gerenciar Sermões</h1>
-      <button id="logout">Logout</button>
-      <h2>Adicionar Sermão</h2>
-      <form id="sermonForm">
-        <input type="text" id="titulo" placeholder="Título" required>
-        <textarea id="conteudo" placeholder="Conteúdo" required></textarea>
-        <input type="date" id="data" required>
-        <input type="text" id="local" placeholder="Local da ministração">
-        <button type="submit">Salvar</button>
-      </form>
-      <h2>Sermões</h2>
-      <table id="sermoesTable">
-        <thead>
-          <tr>
-            <th>Título</th>
-            <th>Data</th>
-            <th>Local</th>
-            <th>Ações</th>
-          </tr>
-        </thead>
-        <tbody></tbody>
-      </table>
-    </div>
+      <div id="dashboard" class="hidden">
+        <div class="flex justify-between items-center mb-4">
+          <h1 class="text-2xl font-bold text-blue-700">Gerenciar Sermões</h1>
+          <button id="logout" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded">Logout</button>
+        </div>
+        <h2 class="text-xl font-semibold mb-2">Adicionar Sermão</h2>
+        <form id="sermonForm" class="flex flex-col gap-3 mb-6">
+          <input type="text" id="titulo" placeholder="Título" required class="border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400" />
+          <textarea id="conteudo" placeholder="Conteúdo" required class="border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 min-h-[100px]"></textarea>
+          <input type="date" id="data" required class="border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400" />
+          <input type="text" id="local" placeholder="Local da ministração" class="border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400" />
+          <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 rounded transition">Salvar</button>
+        </form>
+        <h2 class="text-xl font-semibold mb-2">Sermões</h2>
+        <div class="overflow-x-auto">
+          <table id="sermoesTable" class="min-w-full bg-white border border-gray-200 rounded-lg overflow-hidden">
+            <thead>
+              <tr class="bg-blue-100">
+                <th class="py-2 px-3 text-left">Título</th>
+                <th class="py-2 px-3 text-left">Data</th>
+                <th class="py-2 px-3 text-left">Local</th>
+                <th class="py-2 px-3 text-left">Ações</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
   </div>
 
   <!-- Modal para visualizar conteúdo -->
-  <div id="sermonModal" class="modal">
-    <div class="modal-content">
-      <span class="close">&times;</span>
-      <h2 id="modalTitle"></h2>
-      <p><strong>Data:</strong> <span id="modalDate"></span></p>
-      <p><strong>Local:</strong> <span id="modalLocal"></span></p>
-      <div style="margin-bottom: 10px;">
-        <label for="fontSizeSelect">Tamanho da fonte:</label>
-        <select id="fontSizeSelect">
+  <div id="sermonModal" class="fixed inset-0 z-50 flex flex-col items-center justify-center bg-white hidden overflow-auto">
+    <div class="w-full max-w-2xl mx-auto p-6 relative flex flex-col min-h-screen">
+      <button id="closeSermonModal" class="absolute top-4 left-4 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded">Voltar</button>
+      <h2 id="modalTitle" class="text-2xl font-bold mb-4 text-left mt-12"></h2>
+      <div class="flex flex-col gap-2 mb-4 text-left">
+        <div><span class="font-semibold text-gray-700">Data:</span> <span id="modalDate" class="text-gray-800"></span></div>
+        <div><span class="font-semibold text-gray-700">Local:</span> <span id="modalLocal" class="text-gray-800"></span></div>
+      </div>
+      <div class="flex items-center gap-2 mb-4">
+        <label for="fontSizeSelect" class="font-semibold text-gray-700">Tamanho da fonte:</label>
+        <select id="fontSizeSelect" class="border rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-400">
           <option value="small">Pequeno</option>
           <option value="medium">Médio</option>
           <option value="large">Grande</option>
         </select>
       </div>
-      <div id="modalContent"></div>
+      <div id="modalContent" class="flex-1 overflow-y-auto"></div>
     </div>
   </div>
 
   <!-- Modal para visualizar texto bíblico -->
-  <div id="bibleModal" class="modal">
-    <div class="modal-content">
-      <span class="close" id="bibleModalClose">&times;</span>
-      <h2 id="bibleModalTitle">Texto Bíblico</h2>
+  <div id="bibleModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40 hidden">
+    <div class="bg-white rounded-xl shadow-lg p-6 w-full max-w-xl relative">
+      <span class="close absolute top-2 right-4 text-2xl text-gray-400 hover:text-black cursor-pointer" id="bibleModalClose">&times;</span>
+      <h2 id="bibleModalTitle" class="text-xl font-bold mb-2">Texto Bíblico</h2>
       <div id="bibleContent">
         <p>Carregando...</p>
       </div>
@@ -319,18 +266,26 @@
       document.getElementById('modalTitle').textContent = sermon.titulo;
       document.getElementById('modalDate').textContent = formattedDate;
       document.getElementById('modalLocal').textContent = sermon.local || 'Não informado';
-      document.getElementById('modalContent').innerHTML = '<p><strong>Conteúdo:</strong></p><p>' + processBibleQuotes(sermon.conteudo.replace(/\n/g, '<br>')) + '</p>';
-      document.getElementById('sermonModal').style.display = 'block';
+      document.getElementById('modalContent').innerHTML = '<p class="mb-2 font-semibold">Conteúdo:</p><p>' + processBibleQuotes(sermon.conteudo.replace(/\n/g, '<br>')) + '</p>';
+      document.getElementById('sermonModal').classList.remove('hidden');
+      loginDiv.classList.add('hidden');
+      dashboardDiv.classList.add('hidden');
     }
 
     // Close modal
-    document.querySelector('.close').addEventListener('click', () => {
-      document.getElementById('sermonModal').style.display = 'none';
+    document.getElementById('closeSermonModal').addEventListener('click', () => {
+      document.getElementById('sermonModal').classList.add('hidden');
+      // Volta para a tela principal
+      if (token) {
+        showDashboard();
+      } else {
+        showLogin();
+      }
     });
 
     window.addEventListener('click', (event) => {
       if (event.target == document.getElementById('sermonModal')) {
-        document.getElementById('sermonModal').style.display = 'none';
+        document.getElementById('sermonModal').classList.add('hidden');
       }
     });
 
@@ -399,57 +354,139 @@
       return quotes;
     }
 
-    // Função para buscar texto bíblico usando ABíbliaDigital (versão, livro, capítulo)
+    // Carregar a bíblia em português (NVI) do arquivo local
+    let bibliaNVI = null;
+    async function loadBibliaNVI() {
+      if (bibliaNVI) return bibliaNVI;
+      try {
+        const res = await fetch('pt_nvi.json');
+        bibliaNVI = await res.json();
+        return bibliaNVI;
+      } catch (error) {
+        console.error('Erro ao carregar a Bíblia NVI:', error);
+        return null;
+      }
+    }
+
+    // Mapeamento de nomes de livros para o JSON (ajuste conforme necessário)
+    const livroMap = {
+      // Pentateuco
+      'Gênesis': 'Gênesis', 'Gn': 'Gênesis',
+      'Êxodo': 'Êxodo', 'Ex': 'Êxodo',
+      'Levítico': 'Levítico', 'Lv': 'Levítico',
+      'Números': 'Números', 'Nm': 'Números',
+      'Deuteronômio': 'Deuteronômio', 'Dt': 'Deuteronômio',
+      // Históricos
+      'Josué': 'Josué', 'Js': 'Josué',
+      'Juízes': 'Juízes', 'Jz': 'Juízes',
+      'Rute': 'Rute', 'Rt': 'Rute',
+      '1 Samuel': '1 Samuel', '1Sm': '1 Samuel',
+      '2 Samuel': '2 Samuel', '2Sm': '2 Samuel',
+      '1 Reis': '1 Reis', '1Rs': '1 Reis',
+      '2 Reis': '2 Reis', '2Rs': '2 Reis',
+      '1 Crônicas': '1 Crônicas', '1Cr': '1 Crônicas',
+      '2 Crônicas': '2 Crônicas', '2Cr': '2 Crônicas',
+      'Esdras': 'Esdras', 'Ed': 'Esdras',
+      'Neemias': 'Neemias', 'Ne': 'Neemias',
+      'Ester': 'Ester', 'Et': 'Ester',
+      // Poéticos
+      'Jó': 'Jó', 'Jó': 'Jó',
+      'Salmos': 'Salmos', 'Sl': 'Salmos',
+      'Provérbios': 'Provérbios', 'Pv': 'Provérbios',
+      'Eclesiastes': 'Eclesiastes', 'Ec': 'Eclesiastes',
+      'Cânticos': 'Cânticos', 'Ct': 'Cânticos',
+      // Profetas Maiores
+      'Isaías': 'Isaías', 'Is': 'Isaías',
+      'Jeremias': 'Jeremias', 'Jr': 'Jeremias',
+      'Lamentações': 'Lamentações', 'Lm': 'Lamentações',
+      'Ezequiel': 'Ezequiel', 'Ez': 'Ezequiel',
+      'Daniel': 'Daniel', 'Dn': 'Daniel',
+      // Profetas Menores
+      'Oséias': 'Oséias', 'Os': 'Oséias',
+      'Joel': 'Joel', 'Jl': 'Joel',
+      'Amós': 'Amós', 'Am': 'Amós',
+      'Obadias': 'Obadias', 'Ob': 'Obadias',
+      'Jonas': 'Jonas', 'Jn': 'Jonas',
+      'Miquéias': 'Miquéias', 'Mq': 'Miquéias',
+      'Naum': 'Naum', 'Na': 'Naum',
+      'Habacuque': 'Habacuque', 'Hc': 'Habacuque',
+      'Sofonias': 'Sofonias', 'Sf': 'Sofonias',
+      'Ageu': 'Ageu', 'Ag': 'Ageu',
+      'Zacarias': 'Zacarias', 'Zc': 'Zacarias',
+      'Malaquias': 'Malaquias', 'Ml': 'Malaquias',
+      // Evangelhos e Atos
+      'Mateus': 'Mateus', 'Mt': 'Mateus',
+      'Marcos': 'Marcos', 'Mc': 'Marcos',
+      'Lucas': 'Lucas', 'Lc': 'Lucas',
+      'João': 'João', 'Jo': 'João', 'Jo.': 'João',
+      'Atos': 'Atos', 'At': 'Atos',
+      // Cartas Paulinas
+      'Romanos': 'Romanos', 'Rm': 'Romanos',
+      '1 Coríntios': '1 Coríntios', '1Co': '1 Coríntios',
+      '2 Coríntios': '2 Coríntios', '2Co': '2 Coríntios',
+      'Gálatas': 'Gálatas', 'Gl': 'Gálatas',
+      'Efésios': 'Efésios', 'Ef': 'Efésios',
+      'Filipenses': 'Filipenses', 'Fp': 'Filipenses',
+      'Colossenses': 'Colossenses', 'Cl': 'Colossenses',
+      '1 Tessalonicenses': '1 Tessalonicenses', '1Ts': '1 Tessalonicenses',
+      '2 Tessalonicenses': '2 Tessalonicenses', '2Ts': '2 Tessalonicenses',
+      '1 Timóteo': '1 Timóteo', '1Tm': '1 Timóteo',
+      '2 Timóteo': '2 Timóteo', '2Tm': '2 Timóteo',
+      'Tito': 'Tito', 'Tt': 'Tito',
+      'Filemom': 'Filemom', 'Fm': 'Filemom',
+      // Cartas Gerais
+      'Hebreus': 'Hebreus', 'Hb': 'Hebreus',
+      'Tiago': 'Tiago', 'Tg': 'Tiago',
+      '1 Pedro': '1 Pedro', '1Pe': '1 Pedro',
+      '2 Pedro': '2 Pedro', '2Pe': '2 Pedro',
+      '1 João': '1 João', '1Jo': '1 João',
+      '2 João': '2 João', '2Jo': '2 João',
+      '3 João': '3 João', '3Jo': '3 João',
+      'Judas': 'Judas', 'Jd': 'Judas',
+      'Apocalipse': 'Apocalipse', 'Ap': 'Apocalipse'
+    };
+
+    // Função para buscar texto bíblico do arquivo local
     async function fetchBibleText(book, chapter, verse, endVerse) {
       try {
-        // Mapeamento de livros para abreviações da ABíbliaDigital
-        const bookMap = {
-          'Gênesis': 'gn', 'Êxodo': 'ex', 'Levítico': 'lv', 'Números': 'nm',
-          'Deuteronômio': 'dt', 'Josué': 'js', 'Juízes': 'jz', 'Rute': 'rt',
-          '1 Samuel': '1sm', '2 Samuel': '2sm', '1 Reis': '1rs', '2 Reis': '2rs',
-          '1 Crônicas': '1cr', '2 Crônicas': '2cr', 'Esdras': 'ed', 'Neemias': 'ne',
-          'Ester': 'et', 'Jó': 'jó', 'Salmos': 'sl', 'Provérbios': 'pv',
-          'Eclesiastes': 'ec', 'Cânticos': 'ct', 'Isaías': 'is', 'Jeremias': 'jr',
-          'Lamentações': 'lm', 'Ezequiel': 'ez', 'Daniel': 'dn', 'Oséias': 'os',
-          'Joel': 'jl', 'Amós': 'am', 'Obadias': 'ob', 'Jonas': 'jn',
-          'Miquéias': 'mq', 'Naum': 'na', 'Habacuque': 'hc', 'Sofonias': 'sf',
-          'Ageu': 'ag', 'Zacarias': 'zc', 'Malaquias': 'ml', 'Mateus': 'mt',
-          'Marcos': 'mc', 'Lucas': 'lc', 'João': 'jo', 'Atos': 'at',
-          'Romanos': 'rm', '1 Coríntios': '1co', '2 Coríntios': '2co', 'Gálatas': 'gl',
-          'Efésios': 'ef', 'Filipenses': 'fp', 'Colossenses': 'cl',
-          '1 Tessalonicenses': '1ts', '2 Tessalonicenses': '2ts', '1 Timóteo': '1tm',
-          '2 Timóteo': '2tm', 'Tito': 'tt', 'Filemom': 'fm', 'Hebreus': 'hb',
-          'Tiago': 'tg', '1 Pedro': '1pe', '2 Pedro': '2pe', '1 João': '1jo',
-          '2 João': '2jo', '3 João': '3jo', 'Judas': 'jd', 'Apocalipse': 'ap'
-        };
-
-        const bookAbbrev = bookMap[book];
-        if (!bookAbbrev) {
-          return 'Livro não encontrado no mapeamento.';
+        const biblia = await loadBibliaNVI();
+        if (!biblia) return 'Erro ao carregar a Bíblia.';
+        // Normaliza o nome do livro: remove pontos, espaços extras e deixa minúsculo
+        let bookKey = book.replace(/\./g, '').replace(/\s+/g, ' ').trim().toLowerCase();
+        // Procura no mapeamento de forma insensível a maiúsculas
+        let livroNome = null;
+        for (const [k, v] of Object.entries(livroMap)) {
+          if (k.replace(/\./g, '').replace(/\s+/g, ' ').trim().toLowerCase() === bookKey) {
+            livroNome = v;
+            break;
+          }
         }
-
-        // Versão padrão: nvi (pode trocar para acf, ra, etc.)
-        const version = 'nvi';
-        const url = `https://www.abibliadigital.com.br/api/verses/${version}/${bookAbbrev}/${chapter}`;
-
-        const response = await fetch(url);
-        const data = await response.json();
-
-        if (!data || !data.verses || !Array.isArray(data.verses)) {
-          return 'Texto não encontrado ou erro na API.';
+        if (!livroNome) livroNome = book;
+        // Busca por abreviação ou nome completo
+        let livro = biblia.find(l =>
+          l.abbrev.toLowerCase() === bookKey ||
+          (l.nome && l.nome.toLowerCase() === livroNome.toLowerCase())
+        );
+        // Se não encontrar pelo nome, tenta pelo campo 'name' (alguns JSONs usam 'name' ao invés de 'nome')
+        if (!livro) {
+          livro = biblia.find(l =>
+            (l.name && l.name.toLowerCase() === livroNome.toLowerCase())
+          );
         }
-
-        // Se for um versículo específico, filtra
-        let verses = data.verses;
-        if (verse) {
-          const startVerse = parseInt(verse);
-          const end = endVerse ? parseInt(endVerse) : startVerse;
-          verses = verses.filter(v => v.number >= startVerse && v.number <= end);
-        }
-
+        if (!livro) return 'Livro não encontrado.';
+        // Capítulos
+        const cap = livro.chapters[parseInt(chapter) - 1];
+        if (!cap) return 'Capítulo não encontrado.';
+        const startVerse = verse ? parseInt(verse) : 1;
+        const end = endVerse ? parseInt(endVerse) : startVerse;
+        const versos = cap.slice(startVerse - 1, end);
+        if (!versos || versos.length === 0) return 'Versículo não encontrado.';
         // Monta o texto
-        const text = verses.map(v => `${v.number}. ${v.text}`).join(' ');
-        return text || 'Texto não encontrado';
+        let text = '';
+        for (let i = 0; i < versos.length; i++) {
+          text += `${startVerse + i}. ${versos[i]} `;
+        }
+        return text.trim();
       } catch (error) {
         console.error('Erro ao buscar texto bíblico:', error);
         return 'Erro ao carregar texto bíblico. Tente novamente.';
@@ -484,9 +521,9 @@
         const endVerse = quoteElement.dataset.endVerse;
 
         // Mostrar modal de carregamento
-        document.getElementById('bibleModalTitle').textContent = `${book} ${chapter}:${verse}${endVerse ? `-${endVerse}` : ''} (Almeida)`;
+        document.getElementById('bibleModalTitle').textContent = `${book} ${chapter}:${verse}${endVerse ? `-${endVerse}` : ''} (NVI)`;
         document.getElementById('bibleContent').innerHTML = '<p>Carregando texto bíblico...</p>';
-        document.getElementById('bibleModal').style.display = 'block';
+        document.getElementById('bibleModal').classList.remove('hidden');
 
         // Buscar texto
         const bibleText = await fetchBibleText(book, chapter, verse, endVerse);
@@ -496,12 +533,12 @@
 
     // Fechar modal bíblico
     document.getElementById('bibleModalClose').addEventListener('click', () => {
-      document.getElementById('bibleModal').style.display = 'none';
+      document.getElementById('bibleModal').classList.add('hidden');
     });
 
     window.addEventListener('click', (event) => {
       if (event.target == document.getElementById('bibleModal')) {
-        document.getElementById('bibleModal').style.display = 'none';
+        document.getElementById('bibleModal').classList.add('hidden');
       }
     });
   </script>
