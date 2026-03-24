@@ -1,4 +1,5 @@
 const sqlite3 = require('sqlite3').verbose();
+const bcrypt = require('bcryptjs');
 
 // Use in-memory database for Render (ephemeral filesystem)
 const dbPath = process.env.NODE_ENV === 'production' ? ':memory:' : './sermoes.db';
@@ -57,6 +58,31 @@ db.serialize(() => {
   db.run(`ALTER TABLE sermoes ADD COLUMN local TEXT`, (err) => {
     if (err && !err.message.includes('duplicate column name')) {
       // Ignore silently, it might already exist
+    }
+  });
+
+  // Auto-seed: criar usuário admin se não existir
+  db.get('SELECT * FROM usuarios WHERE username = ?', ['admin'], (err, row) => {
+    if (err) {
+      console.error('Erro ao verificar usuário admin:', err.message);
+    } else if (!row) {
+      // Usuário admin não existe, criar
+      bcrypt.hash('123456', 10, (err, hashedPassword) => {
+        if (err) {
+          console.error('Erro ao hash password:', err.message);
+        } else {
+          const sql = 'INSERT INTO usuarios (username, password) VALUES (?, ?)';
+          db.run(sql, ['admin', hashedPassword], (err) => {
+            if (err) {
+              console.error('Erro ao criar usuário admin:', err.message);
+            } else {
+              console.log('Usuário admin criado automaticamente');
+            }
+          });
+        }
+      });
+    } else {
+      console.log('Usuário admin já existe');
     }
   });
 
