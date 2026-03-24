@@ -51,11 +51,9 @@ app.post('/login', (req, res) => {
     return res.status(400).json({ error: 'Username e password são obrigatórios' });
   }
 
-  const sql = 'SELECT * FROM usuarios WHERE username = ?';
-  db.get(sql, [username], (err, user) => {
-    if (err) {
-      return res.status(500).json({ error: err.message });
-    }
+  try {
+    const sql = 'SELECT * FROM usuarios WHERE username = ?';
+    const user = db.prepare(sql).get(username);
 
     if (!user) {
       return res.status(401).json({ error: 'Credenciais inválidas' });
@@ -73,7 +71,9 @@ app.post('/login', (req, res) => {
       const token = jwt.sign({ id: user.id, username: user.username }, JWT_SECRET);
       res.json({ token });
     });
-  });
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
 });
 
 // Rota para registrar usuário (opcional, para criar admin)
@@ -89,17 +89,16 @@ app.post('/register', (req, res) => {
       return res.status(500).json({ error: err.message });
     }
 
-    const sql = 'INSERT INTO usuarios (username, password) VALUES (?, ?)';
-    db.run(sql, [username, hashedPassword], function(err) {
-      if (err) {
-        if (err.message.includes('UNIQUE constraint failed: usuarios.username')) {
-          return res.status(409).json({ error: 'Usuário já existe' });
-        }
-        return res.status(500).json({ error: err.message });
+    try {
+      const sql = 'INSERT INTO usuarios (username, password) VALUES (?, ?)';
+      const result = db.prepare(sql).run(username, hashedPassword);
+      res.status(201).json({ message: 'Usuário criado', id: result.lastInsertRowid });
+    } catch (err) {
+      if (err.message.includes('UNIQUE constraint failed: usuarios.username')) {
+        return res.status(409).json({ error: 'Usuário já existe' });
       }
-
-      res.status(201).json({ message: 'Usuário criado', id: this.lastID });
-    });
+      return res.status(500).json({ error: err.message });
+    }
   });
 });
 
@@ -114,45 +113,43 @@ app.post('/sermoes', authenticateToken, (req, res) => {
     return res.status(400).json({ error: 'Título, conteúdo e data são obrigatórios' });
   }
 
-  const sql = 'INSERT INTO sermoes (titulo, conteudo, data, local, usuario_id) VALUES (?, ?, ?, ?, ?)';
-  db.run(sql, [titulo, conteudo, data, local || null, usuario_id], function(err) {
-    if (err) {
-      return res.status(500).json({ error: err.message });
-    }
-
-    res.status(201).json({ message: 'Sermão salvo com sucesso', id: this.lastID });
-  });
+  try {
+    const sql = 'INSERT INTO sermoes (titulo, conteudo, data, local, usuario_id) VALUES (?, ?, ?, ?, ?)';
+    const result = db.prepare(sql).run(titulo, conteudo, data, local || null, usuario_id);
+    res.status(201).json({ message: 'Sermão salvo com sucesso', id: result.lastInsertRowid });
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
 });
 
 // GET route to retrieve all sermons for the user
 app.get('/sermoes', authenticateToken, (req, res) => {
   const usuario_id = req.user.id;
-  const sql = 'SELECT * FROM sermoes WHERE usuario_id = ? ORDER BY criado_em DESC';
-  db.all(sql, [usuario_id], (err, rows) => {
-    if (err) {
-      return res.status(500).json({ error: err.message });
-    }
-
+  try {
+    const sql = 'SELECT * FROM sermoes WHERE usuario_id = ? ORDER BY criado_em DESC';
+    const rows = db.prepare(sql).all(usuario_id);
     res.json({ total: rows.length, sermoes: rows });
-  });
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
 });
 
 // GET route to retrieve a single sermon by ID
 app.get('/sermoes/:id', authenticateToken, (req, res) => {
   const { id } = req.params;
   const usuario_id = req.user.id;
-  const sql = 'SELECT * FROM sermoes WHERE id = ? AND usuario_id = ?';
-  db.get(sql, [id, usuario_id], (err, row) => {
-    if (err) {
-      return res.status(500).json({ error: err.message });
-    }
+  try {
+    const sql = 'SELECT * FROM sermoes WHERE id = ? AND usuario_id = ?';
+    const row = db.prepare(sql).get(id, usuario_id);
 
     if (!row) {
       return res.status(404).json({ error: 'Sermão não encontrado' });
     }
 
     res.json(row);
-  });
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
 });
 
 // PUT route to update a sermon
@@ -165,36 +162,36 @@ app.put('/sermoes/:id', authenticateToken, (req, res) => {
     return res.status(400).json({ error: 'Título, conteúdo e data são obrigatórios' });
   }
 
-  const sql = 'UPDATE sermoes SET titulo = ?, conteudo = ?, data = ?, local = ? WHERE id = ? AND usuario_id = ?';
-  db.run(sql, [titulo, conteudo, data, local || null, id, usuario_id], function(err) {
-    if (err) {
-      return res.status(500).json({ error: err.message });
-    }
+  try {
+    const sql = 'UPDATE sermoes SET titulo = ?, conteudo = ?, data = ?, local = ? WHERE id = ? AND usuario_id = ?';
+    const result = db.prepare(sql).run(titulo, conteudo, data, local || null, id, usuario_id);
 
-    if (this.changes === 0) {
+    if (result.changes === 0) {
       return res.status(404).json({ error: 'Sermão não encontrado' });
     }
 
     res.json({ message: 'Sermão atualizado com sucesso' });
-  });
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
 });
 
 // DELETE route to delete a sermon
 app.delete('/sermoes/:id', authenticateToken, (req, res) => {
   const { id } = req.params;
   const usuario_id = req.user.id;
-  const sql = 'DELETE FROM sermoes WHERE id = ? AND usuario_id = ?';
-  db.run(sql, [id, usuario_id], function(err) {
-    if (err) {
-      return res.status(500).json({ error: err.message });
-    }
+  try {
+    const sql = 'DELETE FROM sermoes WHERE id = ? AND usuario_id = ?';
+    const result = db.prepare(sql).run(id, usuario_id);
 
-    if (this.changes === 0) {
+    if (result.changes === 0) {
       return res.status(404).json({ error: 'Sermão não encontrado' });
     }
 
     res.json({ message: 'Sermão excluído com sucesso' });
-  });
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
 });
 
 // Health check para Render

@@ -1,5 +1,4 @@
-const sqlite3 = require('sqlite3').verbose();
-const bcrypt = require('bcryptjs');
+const Database = require('better-sqlite3');
 
 // Use in-memory database for Render (ephemeral filesystem)
 const dbPath = process.env.NODE_ENV === 'production' ? ':memory:' : './sermoes.db';
@@ -7,37 +6,33 @@ const dbPath = process.env.NODE_ENV === 'production' ? ':memory:' : './sermoes.d
 console.log('Database path:', dbPath);
 
 // Create database connection
-const db = new sqlite3.Database(dbPath, (err) => {
-  if (err) {
-    console.error('Erro ao conectar ao banco de dados:', err.message);
-    console.error('Stack:', err.stack);
-    process.exit(1);
-  } else {
-    console.log('Conectado ao banco de dados SQLite.');
-  }
-});
+let db;
+try {
+  db = new Database(dbPath);
+  console.log('Conectado ao banco de dados SQLite.');
+} catch (err) {
+  console.error('Erro ao conectar ao banco de dados:', err.message);
+  console.error('Stack:', err.stack);
+  process.exit(1);
+}
 
 // Enable foreign keys
-db.run('PRAGMA foreign_keys = ON');
+db.pragma('foreign_keys = ON');
 
 // Create tables
-db.serialize(() => {
+try {
   // Users table
-  db.run(`
+  db.exec(`
     CREATE TABLE IF NOT EXISTS usuarios (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       username TEXT UNIQUE NOT NULL,
       password TEXT NOT NULL,
       criado_em DATETIME DEFAULT CURRENT_TIMESTAMP
     )
-  `, (err) => {
-    if (err && !err.message.includes('already exists')) {
-      console.error('Erro ao criar tabela usuarios:', err.message);
-    }
-  });
+  `);
 
   // Sermons table
-  db.run(`
+  db.exec(`
     CREATE TABLE IF NOT EXISTS sermoes (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       titulo TEXT NOT NULL,
@@ -48,45 +43,38 @@ db.serialize(() => {
       criado_em DATETIME DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (usuario_id) REFERENCES usuarios (id)
     )
-  `, (err) => {
-    if (err && !err.message.includes('already exists')) {
-      console.error('Erro ao criar tabela sermoes:', err.message);
-    }
-  });
+  `);
 
   // Add local column if not exists (migration)
-  db.run(`ALTER TABLE sermoes ADD COLUMN local TEXT`, (err) => {
-    if (err && !err.message.includes('duplicate column name')) {
-      // Ignore silently, it might already exist
+  try {
+    db.exec(`ALTER TABLE sermoes ADD COLUMN local TEXT`);
+  } catch (err) {
+    if (!err.message.includes('duplicate column name')) {
+      console.error('Erro ao adicionar coluna local:', err.message);
     }
-  });
+  }
 
   // Auto-seed: criar usuário admin se não existir
-  db.get('SELECT * FROM usuarios WHERE username = ?', ['admin'], (err, row) => {
-    if (err) {
-      console.error('Erro ao verificar usuário admin:', err.message);
-    } else if (!row) {
-      // Usuário admin não existe, criar
-      bcrypt.hash('123456', 10, (err, hashedPassword) => {
-        if (err) {
-          console.error('Erro ao hash password:', err.message);
-        } else {
-          const sql = 'INSERT INTO usuarios (username, password) VALUES (?, ?)';
-          db.run(sql, ['admin', hashedPassword], (err) => {
-            if (err) {
-              console.error('Erro ao criar usuário admin:', err.message);
-            } else {
-              console.log('Usuário admin criado automaticamente');
-            }
-          });
-        }
-      });
-    } else {
-      console.log('Usuário admin já existe');
-    }
-  });
+  const checkAdmin = db.prepare('SELECT * FROM usuarios WHERE username = ?');
+  const adminRow = checkAdmin.get('admin');
+
+  if (!adminRow) {
+    // Usuário admin não existe, criar
+    const bcrypt = require('bcryptjs');
+    const hashedPassword = bcrypt.hashSync('123456', 10);
+    const insertAdmin = db.prepare('INSERT INTO usuarios (username, password) VALUES (?, ?)');
+    insertAdmin.run('admin', hashedPassword);
+    console.log('Usuário admin criado automaticamente');
+  } else {
+    console.log('Usuário admin já existe');
+  }
 
   console.log('Database initialization completed');
-});
+} catch (err) {
+  console.error('Erro na inicialização do banco:', err.message);
+  process.exit(1);
+}
+
+module.exports = db;
 
 module.exports = db;
