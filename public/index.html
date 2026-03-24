@@ -32,6 +32,23 @@
     .font-medium { font-size: 16px; }
     .font-large { font-size: 18px; }
 
+    /* Estilos para citações bíblicas */
+    .bible-quote {
+      background-color: #e8f4fd;
+      border-left: 3px solid #2196F3;
+      padding: 8px 12px;
+      margin: 8px 0;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+    .bible-quote:hover {
+      background-color: #d1e7dd;
+    }
+    .bible-quote strong {
+      color: #1976D2;
+    }
+
     /* Responsividade */
     @media (max-width: 768px) {
       .container { margin: 10px; padding: 15px; }
@@ -104,6 +121,17 @@
         </select>
       </div>
       <div id="modalContent"></div>
+    </div>
+  </div>
+
+  <!-- Modal para visualizar texto bíblico -->
+  <div id="bibleModal" class="modal">
+    <div class="modal-content">
+      <span class="close" id="bibleModalClose">&times;</span>
+      <h2 id="bibleModalTitle">Texto Bíblico</h2>
+      <div id="bibleContent">
+        <p>Carregando...</p>
+      </div>
     </div>
   </div>
 
@@ -291,7 +319,7 @@
       document.getElementById('modalTitle').textContent = sermon.titulo;
       document.getElementById('modalDate').textContent = formattedDate;
       document.getElementById('modalLocal').textContent = sermon.local || 'Não informado';
-      document.getElementById('modalContent').innerHTML = '<p><strong>Conteúdo:</strong></p><p>' + sermon.conteudo.replace(/\n/g, '<br>') + '</p>';
+      document.getElementById('modalContent').innerHTML = '<p><strong>Conteúdo:</strong></p><p>' + processBibleQuotes(sermon.conteudo.replace(/\n/g, '<br>')) + '</p>';
       document.getElementById('sermonModal').style.display = 'block';
     }
 
@@ -336,6 +364,129 @@
       const selectedSize = e.target.value;
       applyFontSize(selectedSize);
       localStorage.setItem('fontSize', selectedSize);
+    });
+
+    // Função para detectar citações bíblicas
+    function detectBibleQuotes(text) {
+      // Padrões comuns de citações bíblicas em português
+      const patterns = [
+        // Livros completos: Gênesis, Êxodo, etc.
+        /\b(Gênesis|Êxodo|Levítico|Números|Deuteronômio|Josué|Juízes|Rute|1 Samuel|2 Samuel|1 Reis|2 Reis|1 Crônicas|2 Crônicas|Esdras|Neemias|Ester|Jó|Salmos|Provérbios|Eclesiastes|Cânticos|Isaías|Jeremias|Lamentações|Ezequiel|Daniel|Oséias|Joel|Amós|Obadias|Jonas|Miquéias|Naum|Habacuque|Sofonias|Ageu|Zacarias|Malaquias|Mateus|Marcos|Lucas|João|Atos|Romanos|1 Coríntios|2 Coríntios|Gálatas|Efésios|Filipenses|Colossenses|1 Tessalonicenses|2 Tessalonicenses|1 Timóteo|2 Timóteo|Tito|Filemom|Hebreus|Tiago|1 Pedro|2 Pedro|1 João|2 João|3 João|Judas|Apocalipse)\s+(\d+)(?::(\d+)(?:-(\d+))?)?/gi,
+        // Abreviações comuns: Gn, Ex, etc.
+        /\b(Gn|Ex|Lv|Nm|Dt|Js|Jz|Rt|1Sm|2Sm|1Rs|2Rs|1Cr|2Cr|Ed|Ne|Et| Jó|Sl|Pv|Ec|Ct|Is|Jr|Lm|Ez|Dn|Os|Jl|Am|Ob|Jn|Mq|Na|Hb| Sf|Ag|Zc|Ml|Mt|Mc|Lc|Jo|At|Rm|1Co|2Co|Gl|Ef|Fp|Cl|1Ts|2Ts|1Tm|2Tm|Tt|Fm|Hb|Tg|1Pe|2Pe|1Jo|2Jo|3Jo|Jd|Ap)\s+(\d+)(?::(\d+)(?:-(\d+))?)?/gi
+      ];
+
+      const quotes = [];
+      patterns.forEach(pattern => {
+        let match;
+        while ((match = pattern.exec(text)) !== null) {
+          const book = match[1];
+          const chapter = match[2];
+          const verse = match[3];
+          const endVerse = match[4];
+
+          quotes.push({
+            book: book,
+            chapter: parseInt(chapter),
+            verse: verse ? parseInt(verse) : null,
+            endVerse: endVerse ? parseInt(endVerse) : null,
+            fullMatch: match[0],
+            index: match.index
+          });
+        }
+      });
+
+      return quotes;
+    }
+
+    // Função para buscar texto bíblico (usando API externa)
+    async function fetchBibleText(book, chapter, verse, endVerse) {
+      try {
+        // Usando Bible API (exemplo - você pode substituir por outra API)
+        const bookMap = {
+          'Gênesis': 'gen', 'Êxodo': 'exo', 'Levítico': 'lev', 'Números': 'num',
+          'Deuteronômio': 'deu', 'Josué': 'jos', 'Juízes': 'jdg', 'Rute': 'rut',
+          '1 Samuel': '1sa', '2 Samuel': '2sa', '1 Reis': '1ki', '2 Reis': '2ki',
+          '1 Crônicas': '1ch', '2 Crônicas': '2ch', 'Esdras': 'ezr', 'Neemias': 'neh',
+          'Ester': 'est', 'Jó': 'job', 'Salmos': 'psa', 'Provérbios': 'pro',
+          'Eclesiastes': 'ecc', 'Cânticos': 'sng', 'Isaías': 'isa', 'Jeremias': 'jer',
+          'Lamentações': 'lam', 'Ezequiel': 'ezk', 'Daniel': 'dan', 'Oséias': 'hos',
+          'Joel': 'jol', 'Amós': 'amo', 'Obadias': 'oba', 'Jonas': 'jon',
+          'Miquéias': 'mic', 'Naum': 'nam', 'Habacuque': 'hab', 'Sofonias': 'zep',
+          'Ageu': 'hag', 'Zacarias': 'zec', 'Malaquias': 'mal', 'Mateus': 'mat',
+          'Marcos': 'mrk', 'Lucas': 'luk', 'João': 'jhn', 'Atos': 'act',
+          'Romanos': 'rom', '1 Coríntios': '1co', '2 Coríntios': '2co', 'Gálatas': 'gal',
+          'Efésios': 'eph', 'Filipenses': 'php', 'Colossenses': 'col',
+          '1 Tessalonicenses': '1th', '2 Tessalonicenses': '2th', '1 Timóteo': '1ti',
+          '2 Timóteo': '2ti', 'Tito': 'tit', 'Filemom': 'phm', 'Hebreus': 'heb',
+          'Tiago': 'jas', '1 Pedro': '1pe', '2 Pedro': '2pe', '1 João': '1jn',
+          '2 João': '2jn', '3 João': '3jn', 'Judas': 'jud', 'Apocalipse': 'rev'
+        };
+
+        const bookAbbrev = bookMap[book] || book.toLowerCase();
+        const url = `https://bible-api.com/${bookAbbrev}${chapter}:${verse}${endVerse ? `-${endVerse}` : ''}?translation=nvi`;
+
+        const response = await fetch(url);
+        const data = await response.json();
+
+        if (data.error) {
+          return `Erro ao buscar texto: ${data.error}`;
+        }
+
+        return data.text || 'Texto não encontrado';
+      } catch (error) {
+        console.error('Erro ao buscar texto bíblico:', error);
+        return 'Erro ao carregar texto bíblico. Tente novamente.';
+      }
+    }
+
+    // Função para processar conteúdo e adicionar citações clicáveis
+    function processBibleQuotes(content) {
+      const quotes = detectBibleQuotes(content);
+      let processedContent = content;
+      let offset = 0;
+
+      quotes.forEach(quote => {
+        const beforeQuote = processedContent.substring(0, quote.index + offset);
+        const afterQuote = processedContent.substring(quote.index + offset + quote.fullMatch.length);
+        const quoteHtml = `<span class="bible-quote" data-book="${quote.book}" data-chapter="${quote.chapter}" data-verse="${quote.verse}" data-end-verse="${quote.endVerse || ''}"><strong>${quote.fullMatch}</strong> 📖</span>`;
+
+        processedContent = beforeQuote + quoteHtml + afterQuote;
+        offset += quoteHtml.length - quote.fullMatch.length;
+      });
+
+      return processedContent;
+    }
+
+    // Event listener para citações bíblicas
+    document.addEventListener('click', async (e) => {
+      if (e.target.classList.contains('bible-quote') || e.target.closest('.bible-quote')) {
+        const quoteElement = e.target.classList.contains('bible-quote') ? e.target : e.target.closest('.bible-quote');
+        const book = quoteElement.dataset.book;
+        const chapter = quoteElement.dataset.chapter;
+        const verse = quoteElement.dataset.verse;
+        const endVerse = quoteElement.dataset.endVerse;
+
+        // Mostrar modal de carregamento
+        document.getElementById('bibleModalTitle').textContent = `${book} ${chapter}:${verse}${endVerse ? `-${endVerse}` : ''} (NVI)`;
+        document.getElementById('bibleContent').innerHTML = '<p>Carregando texto bíblico...</p>';
+        document.getElementById('bibleModal').style.display = 'block';
+
+        // Buscar texto
+        const bibleText = await fetchBibleText(book, chapter, verse, endVerse);
+        document.getElementById('bibleContent').innerHTML = `<p>${bibleText}</p>`;
+      }
+    });
+
+    // Fechar modal bíblico
+    document.getElementById('bibleModalClose').addEventListener('click', () => {
+      document.getElementById('bibleModal').style.display = 'none';
+    });
+
+    window.addEventListener('click', (event) => {
+      if (event.target == document.getElementById('bibleModal')) {
+        document.getElementById('bibleModal').style.display = 'none';
+      }
     });
   </script>
 </body>
