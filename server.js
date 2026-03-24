@@ -178,6 +178,20 @@ app.delete('/sermoes/:id', authenticateToken, (req, res) => {
   });
 });
 
+// Health check para Render
+app.get('/health', (req, res) => {
+  res.status(200).send('ok');
+});
+
+// Rota fallback (Single Page App e hospedagem em subcaminhos)
+const path = require('path');
+app.get('*', (req, res) => {
+  if (req.path.startsWith('/login') || req.path.startsWith('/sermoes')) {
+    return res.status(404).send('Not Found');
+  }
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
 // Start server
 app.listen(PORT, () => {
   console.log(`Servidor rodando em http://localhost:${PORT}`);
