@@ -27,6 +27,11 @@
     .close { color: #aaa; float: right; font-size: 28px; font-weight: bold; cursor: pointer; }
     .close:hover { color: black; }
 
+    /* Tamanhos de fonte para conteúdo */
+    .font-small { font-size: 14px; }
+    .font-medium { font-size: 16px; }
+    .font-large { font-size: 18px; }
+
     /* Responsividade */
     @media (max-width: 768px) {
       .container { margin: 10px; padding: 15px; }
@@ -90,6 +95,14 @@
       <h2 id="modalTitle"></h2>
       <p><strong>Data:</strong> <span id="modalDate"></span></p>
       <p><strong>Local:</strong> <span id="modalLocal"></span></p>
+      <div style="margin-bottom: 10px;">
+        <label for="fontSizeSelect">Tamanho da fonte:</label>
+        <select id="fontSizeSelect">
+          <option value="small">Pequeno</option>
+          <option value="medium">Médio</option>
+          <option value="large">Grande</option>
+        </select>
+      </div>
       <div id="modalContent"></div>
     </div>
   </div>
@@ -302,6 +315,28 @@
       loginDiv.classList.add('hidden');
       dashboardDiv.classList.remove('hidden');
     }
+
+    // Controle de tamanho de fonte
+    const fontSizeSelect = document.getElementById('fontSizeSelect');
+    const modalContent = document.getElementById('modalContent');
+
+    // Carregar preferência salva
+    const savedFontSize = localStorage.getItem('fontSize') || 'medium';
+    fontSizeSelect.value = savedFontSize;
+    applyFontSize(savedFontSize);
+
+    // Aplicar tamanho de fonte
+    function applyFontSize(size) {
+      modalContent.classList.remove('font-small', 'font-medium', 'font-large');
+      modalContent.classList.add(`font-${size}`);
+    }
+
+    // Event listener para mudança de tamanho
+    fontSizeSelect.addEventListener('change', (e) => {
+      const selectedSize = e.target.value;
+      applyFontSize(selectedSize);
+      localStorage.setItem('fontSize', selectedSize);
+    });
   </script>
 </body>
 </html>

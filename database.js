@@ -1,7 +1,12 @@
 const sqlite3 = require('sqlite3').verbose();
 
+// Use in-memory database for Render (ephemeral filesystem)
+const dbPath = process.env.NODE_ENV === 'production' ? ':memory:' : './sermoes.db';
+
+console.log('Database path:', dbPath);
+
 // Create database connection
-const db = new sqlite3.Database('./sermoes.db', (err) => {
+const db = new sqlite3.Database(dbPath, (err) => {
   if (err) {
     console.error('Erro ao conectar ao banco de dados:', err.message);
     console.error('Stack:', err.stack);

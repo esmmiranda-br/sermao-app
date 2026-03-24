@@ -92,6 +92,9 @@ app.post('/register', (req, res) => {
     const sql = 'INSERT INTO usuarios (username, password) VALUES (?, ?)';
     db.run(sql, [username, hashedPassword], function(err) {
       if (err) {
+        if (err.message.includes('UNIQUE constraint failed: usuarios.username')) {
+          return res.status(409).json({ error: 'Usuário já existe' });
+        }
         return res.status(500).json({ error: err.message });
       }
 
