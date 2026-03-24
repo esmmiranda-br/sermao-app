@@ -4,10 +4,14 @@ const sqlite3 = require('sqlite3').verbose();
 const db = new sqlite3.Database('./sermoes.db', (err) => {
   if (err) {
     console.error('Erro ao conectar ao banco de dados:', err.message);
+    process.exit(1);
   } else {
     console.log('Conectado ao banco de dados SQLite.');
   }
 });
+
+// Enable foreign keys
+db.run('PRAGMA foreign_keys = ON');
 
 // Create tables
 db.serialize(() => {
@@ -19,7 +23,11 @@ db.serialize(() => {
       password TEXT NOT NULL,
       criado_em DATETIME DEFAULT CURRENT_TIMESTAMP
     )
-  `);
+  `, (err) => {
+    if (err && !err.message.includes('already exists')) {
+      console.error('Erro ao criar tabela usuarios:', err.message);
+    }
+  });
 
   // Sermons table
   db.run(`
@@ -33,12 +41,16 @@ db.serialize(() => {
       criado_em DATETIME DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (usuario_id) REFERENCES usuarios (id)
     )
-  `);
+  `, (err) => {
+    if (err && !err.message.includes('already exists')) {
+      console.error('Erro ao criar tabela sermoes:', err.message);
+    }
+  });
 
   // Add local column if not exists (migration)
   db.run(`ALTER TABLE sermoes ADD COLUMN local TEXT`, (err) => {
     if (err && !err.message.includes('duplicate column name')) {
-      console.error('Erro ao adicionar coluna local:', err.message);
+      // Ignore silently, it might already exist
     }
   });
 });
