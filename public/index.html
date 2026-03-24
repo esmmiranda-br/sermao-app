@@ -402,38 +402,46 @@
     // Função para buscar texto bíblico (usando API externa)
     async function fetchBibleText(book, chapter, verse, endVerse) {
       try {
-        // Usando Bible API (exemplo - você pode substituir por outra API)
+        // Usando API da American Bible Society (NIV em inglês)
         const bookMap = {
-          'Gênesis': 'gen', 'Êxodo': 'exo', 'Levítico': 'lev', 'Números': 'num',
-          'Deuteronômio': 'deu', 'Josué': 'jos', 'Juízes': 'jdg', 'Rute': 'rut',
-          '1 Samuel': '1sa', '2 Samuel': '2sa', '1 Reis': '1ki', '2 Reis': '2ki',
-          '1 Crônicas': '1ch', '2 Crônicas': '2ch', 'Esdras': 'ezr', 'Neemias': 'neh',
-          'Ester': 'est', 'Jó': 'job', 'Salmos': 'psa', 'Provérbios': 'pro',
-          'Eclesiastes': 'ecc', 'Cânticos': 'sng', 'Isaías': 'isa', 'Jeremias': 'jer',
-          'Lamentações': 'lam', 'Ezequiel': 'ezk', 'Daniel': 'dan', 'Oséias': 'hos',
-          'Joel': 'jol', 'Amós': 'amo', 'Obadias': 'oba', 'Jonas': 'jon',
-          'Miquéias': 'mic', 'Naum': 'nam', 'Habacuque': 'hab', 'Sofonias': 'zep',
-          'Ageu': 'hag', 'Zacarias': 'zec', 'Malaquias': 'mal', 'Mateus': 'mat',
-          'Marcos': 'mrk', 'Lucas': 'luk', 'João': 'jhn', 'Atos': 'act',
-          'Romanos': 'rom', '1 Coríntios': '1co', '2 Coríntios': '2co', 'Gálatas': 'gal',
-          'Efésios': 'eph', 'Filipenses': 'php', 'Colossenses': 'col',
-          '1 Tessalonicenses': '1th', '2 Tessalonicenses': '2th', '1 Timóteo': '1ti',
-          '2 Timóteo': '2ti', 'Tito': 'tit', 'Filemom': 'phm', 'Hebreus': 'heb',
-          'Tiago': 'jas', '1 Pedro': '1pe', '2 Pedro': '2pe', '1 João': '1jn',
-          '2 João': '2jn', '3 João': '3jn', 'Judas': 'jud', 'Apocalipse': 'rev'
+          'Gênesis': 'Gen', 'Êxodo': 'Exod', 'Levítico': 'Lev', 'Números': 'Num',
+          'Deuteronômio': 'Deut', 'Josué': 'Josh', 'Juízes': 'Judg', 'Rute': 'Ruth',
+          '1 Samuel': '1Sam', '2 Samuel': '2Sam', '1 Reis': '1Kgs', '2 Reis': '2Kgs',
+          '1 Crônicas': '1Chr', '2 Crônicas': '2Chr', 'Esdras': 'Ezra', 'Neemias': 'Neh',
+          'Ester': 'Esth', 'Jó': 'Job', 'Salmos': 'Ps', 'Provérbios': 'Prov',
+          'Eclesiastes': 'Eccl', 'Cânticos': 'Song', 'Isaías': 'Isa', 'Jeremias': 'Jer',
+          'Lamentações': 'Lam', 'Ezequiel': 'Ezek', 'Daniel': 'Dan', 'Oséias': 'Hos',
+          'Joel': 'Joel', 'Amós': 'Amos', 'Obadias': 'Obad', 'Jonas': 'Jonah',
+          'Miquéias': 'Mic', 'Naum': 'Nah', 'Habacuque': 'Hab', 'Sofonias': 'Zeph',
+          'Ageu': 'Hag', 'Zacarias': 'Zech', 'Malaquias': 'Mal', 'Mateus': 'Matt',
+          'Marcos': 'Mark', 'Lucas': 'Luke', 'João': 'John', 'Atos': 'Acts',
+          'Romanos': 'Rom', '1 Coríntios': '1Cor', '2 Coríntios': '2Cor', 'Gálatas': 'Gal',
+          'Efésios': 'Eph', 'Filipenses': 'Phil', 'Colossenses': 'Col',
+          '1 Tessalonicenses': '1Thess', '2 Tessalonicenses': '2Thess', '1 Timóteo': '1Tim',
+          '2 Timóteo': '2Tim', 'Tito': 'Titus', 'Filemom': 'Phlm', 'Hebreus': 'Heb',
+          'Tiago': 'Jas', '1 Pedro': '1Pet', '2 Pedro': '2Pet', '1 João': '1John',
+          '2 João': '2John', '3 João': '3John', 'Judas': 'Jude', 'Apocalipse': 'Rev'
         };
 
-        const bookAbbrev = bookMap[book] || book.toLowerCase();
-        const url = `https://bible-api.com/${bookAbbrev}${chapter}:${verse}${endVerse ? `-${endVerse}` : ''}?translation=nvi`;
+        const bookAbbrev = bookMap[book];
+        if (!bookAbbrev) {
+          return 'Livro não encontrado no mapeamento.';
+        }
+
+        const passage = endVerse ? `${bookAbbrev}+${chapter}:${verse}-${endVerse}` : `${bookAbbrev}+${chapter}:${verse}`;
+        const url = `https://labs.bible.org/api/?passage=${passage}&type=json`;
 
         const response = await fetch(url);
         const data = await response.json();
 
-        if (data.error) {
-          return `Erro ao buscar texto: ${data.error}`;
+        if (!Array.isArray(data) || data.length === 0) {
+          return 'Texto não encontrado ou erro na API.';
         }
 
-        return data.text || 'Texto não encontrado';
+        // Combinar todos os versículos em um texto único
+        const text = data.map(verse => `${verse.verse}. ${verse.text}`).join(' ');
+
+        return text || 'Texto não encontrado';
       } catch (error) {
         console.error('Erro ao buscar texto bíblico:', error);
         return 'Erro ao carregar texto bíblico. Tente novamente.';
